@@ -371,7 +371,7 @@ python -m pip install . --no-deps --no-build-isolation
 Flash attention is built from third party of Pytorch, we just need to build from there
 
 ```bash
-cd pytorch folder
+cd pytorch/third_party/flash-attention
 python setup.py install
 ```
 
@@ -379,15 +379,15 @@ Do the same for any library from third party that you would need for your projec
 
 # Conclusion
 
-You now have a **python env with all libraries optimized for GDX Spark**. 
+You now have a **Python environment with all libraries optimized for DGX Spark**. 
 
-If you would need to create a new env just re-install all packages with the build wheel. 
+If you need to create a new environment, simply reinstall all packages using the built wheels. 
 
-Including:
+This optimized environment includes:
 
-- latest CUDA libraries  
+- Latest CUDA libraries  
 - Triton compiled for SM 12.x  
 - PyTorch rebuilt for Grace + Blackwell  
-- support for FP4/FP8 Tensor Cores  
-- support for GPUDirect Storage  
-- support for 2:4 sparsity acceleration  
+- Support for FP4/FP8 Tensor Cores  
+- Support for GPUDirect Storage  
+- Support for 2:4 sparsity acceleration  

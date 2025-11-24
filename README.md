@@ -63,6 +63,8 @@ We want PyTorch to:
 
 ---
 
+> **Skip the build?** If you want to use prebuilt wheels from releases instead of building from source, jump to [Install Directly From Prebuilt Wheels](#install-directly-from-prebuilt-wheels-skip-build).
+
 ## Libraries to Update
 
 ### CPU-side CUDA Libraries
@@ -416,7 +418,9 @@ Do the same for any library from third party that you would need for your projec
 
 ## Reusable Wheelhouse (Symlink Strategy)
 
-After building all wheels (audio, vision, torch, triton, onnx, flash-attention, etc.) you can create a central "wheelhouse" directory of symlinks. This lets you: 
+> Quick path: If you already have a tarball or directory of prebuilt release wheels (internal CI artifacts or official distribution), you can skip all build steps and jump directly to the wheelhouse usage below. Just extract/copy them into your wheelhouse directory.
+
+After building all wheels (audio, vision, torch, triton, onnx, flash-attention, etc.) OR collecting prebuilt release wheels, you can create a central "wheelhouse" directory (symlinks or copies). This lets you: 
 - Rapidly bootstrap new virtual environments (`pip install --no-index --find-links ...`) without rebuilding.
 - Copy the collection to another DGX Spark node for identical setup.
 
@@ -477,6 +481,29 @@ tar xzf /tmp/mlwheel.tgz -C ~/jupyterlab/mlwheel
 export MLWHEEL=~/jupyterlab/mlwheel
 ```
 Now repeat the environment creation step using the extracted wheelhouse.
+
+### Install Directly From Prebuilt Wheels (Skip Build)
+
+You can use prebuilt wheels from the latest GitHub release.
+
+Download the wheels archive from the [Releases page](https://github.com/GuigsEvt/dgx_spark_config/releases):
+
+```bash
+wget https://github.com/GuigsEvt/dgx_spark_config/releases/download/v1.0/wheels.tar.gz
+mkdir -p wheels
+tar xzf wheels.tar.gz -C wheels/
+```
+
+Then install the wheels one by one through: `pip install <wheel_name>` 
+
+Validation:
+```bash
+python - <<'PY'
+import torch
+print('Torch version:', torch.__version__, 'CUDA:', torch.version.cuda)
+print(torch.cuda.get_device_properties(0))
+PY
+```
 
 # Conclusion
 

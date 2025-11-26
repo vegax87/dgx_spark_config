@@ -86,6 +86,30 @@ We want PyTorch to:
 
 ## Prerequisites
 
+### Recommended: Grace–Blackwell PyTorch autosetup helper
+
+This repo includes `grace_blackwell_pytorch_autosetup.sh`, which discovers CUDA/cuDNN/NCCL/cuSPARSELt/cuFile on a DGX Spark (Grace CPU + Blackwell GPU) and exports the right `USE_*` / `TORCH_CUDA_ARCH_LIST` / `CUDA_*` environment variables for a PyTorch 2.9.1 build.
+
+From a fresh Ubuntu/DGX OS environment on the DGX Spark:
+
+```bash
+git clone https://github.com/GuigsEvt/dgx_spark_config.git
+cd dgx_spark_config
+
+# Source the helper to install system deps and prepare env
+source grace_blackwell_pytorch_autosetup.sh
+```
+
+This will:
+- install core build dependencies and NVIDIA libraries via `apt-get`
+- install cuSPARSELt local repo and packages for Ubuntu 24.04 arm64
+- auto-detect CUDA, cuDNN, NCCL, cuFile, cuSPARSELt
+- set `USE_CUDA`, `USE_CUDNN`, `USE_CUSPARSELT`, `USE_CUFILE`, `USE_SYSTEM_NCCL`, `USE_DISTRIBUTED`, `USE_FBGEMM_GENAI`, `USE_FLASH_ATTENTION`, `USE_MEM_EFF_ATTENTION`, etc.
+
+You can still override any exported variable before building PyTorch if needed.
+
+### Manual venv setup
+
 ```bash
 mkdir mllib
 cd mllib
@@ -94,102 +118,29 @@ python3 -m venv .venv --prompt mllib
 source .venv/bin/activate
 ```
 
-Essential tools:
+### Essential system packages for from-scratch releases
+
+If you build all wheels from source (PyTorch + audio + vision + flash-attention), make sure this minimal set of system packages is installed first:
 
 ```bash
-sudo apt update
-sudo apt install -y build-essential git cmake ninja-build python3-dev python3-pip clang libomp-dev libopenmpi-dev openmpi-bin openmpi-common gfortran
-```
-
----
-
-# Installation Instructions
-
-## cuBLAS
-
-```bash
-sudo apt install -y libcublas-dev
-```
-
----
-
-## cuFile (GDS)
-
-```bash
-sudo apt install -y nvidia-gds
-```
-
----
-
-## cuDNN
-
-```bash
-sudo apt install -y libcudnn-dev
-```
-
----
-
-## cuSPARSELt
-
-**Why:** `cuSPARSELt` provides optimized sparse GEMM (2:4 sparsity) kernels required to unlock Blackwell’s sparse Tensor Core throughput.
-
-On DGX Spark, the default Ubuntu/DGX OS APT repositories **do not yet provide the latest cuSPARSELt version required for CUDA 13 and Blackwell (SM 12.x)**.  
-Because of that, we must install cuSPARSELt manually using NVIDIA’s local repository package.  
-This is a temporary situation — once NVIDIA updates the APT repos for DGX OS, this workaround will no longer be needed.
-
-
-Create `install_cusparselt.sh`:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-CUSPARSELT_VERSION="0.8.0"
-DISTRO="ubuntu2404"
-DEB="cusparselt-local-repo-${DISTRO}-${CUSPARSELT_VERSION}_${CUSPARSELT_VERSION}-1_arm64.deb"
-
-echo "[cuSPARSELt] Downloading local repo package..."
-wget -q --show-progress --progress=bar:force:noscroll --no-check-certificate \
-  -O "${DEB}" \
-  "https://developer.download.nvidia.com/compute/cusparselt/${CUSPARSELT_VERSION}/local_installers/${DEB}"
-
-echo "[cuSPARSELt] Installing local repo..."
-sudo dpkg -i "${DEB}"
-
-echo "[cuSPARSELt] Installing GPG key..."
-sudo cp /var/cusparselt-local-repo-${DISTRO}-${CUSPARSELT_VERSION}/cusparselt-local-*-keyring.gpg /usr/share/keyrings/
-
-echo "[cuSPARSELt] Updating APT cache for cuSPARSELt repo..."
 sudo apt-get update
-
-# Detect CUDA major if nvcc is available, otherwise default to 13
-if command -v nvcc >/dev/null 2>&1; then
-  CUDA_MAJOR=$(nvcc --version | awk -F'release ' '/release/{print $2}' | cut -d. -f1)
-else
-  CUDA_MAJOR="13"
-fi
-echo "[cuSPARSELt] Using CUDA major ${CUDA_MAJOR}"
-
-# Prefer CUDA-major-suffixed packages if they exist
-PKG_RT="libcusparselt0-cuda-${CUDA_MAJOR}"
-PKG_DEV="libcusparselt0-dev-cuda-${CUDA_MAJOR}"
-
-if ! apt-cache show "${PKG_RT}" >/dev/null 2>&1; then
-  echo "[cuSPARSELt] Fallback to generic package names"
-  PKG_RT="libcusparselt0"
-  PKG_DEV="libcusparselt0-dev"
-fi
-
-echo "[cuSPARSELt] Installing: ${PKG_RT} ${PKG_DEV}"
-sudo apt-get install -y "${PKG_RT}" "${PKG_DEV}"
-
-echo "[cuSPARSELt] Installed packages:"
-dpkg -l | grep -Ei 'cusparselt|libcusparselt' || true
-
-echo "[cuSPARSELt] Refreshing linker cache..."
-sudo ldconfig
-
-echo "[cuSPARSELt] Done."
+sudo apt-get install -y \
+  build-essential \
+  cmake \
+  ninja-build \
+  git \
+  curl \
+  wget \
+  pkg-config \
+  python3 python3-dev python3-pip python3-setuptools python3-wheel python3-venv \
+  libopenblas-dev \
+  libcublas-dev-13-0 \
+  libomp-dev \
+  libopenmpi-dev mpi-default-bin \
+  libuv1-dev \
+  libssl-dev \
+  zlib1g \
+  cudnn9-cuda-13-0
 ```
 
 ---

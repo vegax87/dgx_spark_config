@@ -435,9 +435,31 @@ Now repeat the environment creation step using the extracted wheelhouse.
 
 ### Install Directly From Prebuilt Wheels (Skip Build)
 
-You can use prebuilt wheels from the latest GitHub release.
+You can use prebuilt wheels from the latest GitHub release. **Even when using wheels, you must first install the same system packages as for from-scratch builds:**
 
-Download the wheels archive from the [Releases page](https://github.com/GuigsEvt/dgx_spark_config/releases):
+```bash
+sudo apt-get update
+
+sudo apt-get install -y \
+  build-essential \
+  cmake \
+  ninja-build \
+  git \
+  curl \
+  wget \
+  pkg-config \
+  python3 python3-dev python3-pip python3-setuptools python3-wheel python3-venv \
+  libopenblas-dev \
+  libcublas-dev-13-0 \
+  libomp-dev \
+  libopenmpi-dev mpi-default-bin \
+  libuv1-dev \
+  libssl-dev \
+  zlib1g \
+  cudnn9-cuda-13-0
+```
+
+Then download the wheels archive from the [Releases page](https://github.com/GuigsEvt/dgx_spark_config/releases):
 
 ```bash
 wget https://github.com/GuigsEvt/dgx_spark_config/releases/download/v1.0/wheels.tar.gz
@@ -445,7 +467,18 @@ mkdir -p wheels
 tar xzf wheels.tar.gz -C wheels/
 ```
 
-Then install the wheels one by one through: `pip install <wheel_name>` 
+When installing wheels, **always install PyTorch and Triton first**, then the rest. This prevents other libraries from pulling a different, unoptimized PyTorch from PyPI:
+
+```bash
+cd wheels
+
+# First: core stack (optimized Triton + PyTorch)
+pip install ./triton-*.whl
+pip install ./torch-*.whl
+
+# Then: remaining wheels (audio, vision, onnx, flash-attention, etc.)
+pip install ./*.whl
+```
 
 Validation:
 ```bash

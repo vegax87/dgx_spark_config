@@ -297,6 +297,12 @@ export USE_MKLDNN=0
 export BUILD_TEST=0
 export USE_KINETO=0
 
+# Environment variables for Pytorch ._utils
+export USE_PYTHON=1
+export BUILD_PYTHON=1
+export BUILD_LIBTORCH_PYTHON=1
+export BUILD_CAFFE2=0
+
 # TORCH_CUDA_ARCH_LIST
 if [[ -n "${GPU_CC_MAJOR}" ]]; then
   if [[ "${GPU_CC_MAJOR}" -eq 12 ]]; then
